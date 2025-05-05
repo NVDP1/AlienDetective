@@ -1,3 +1,10 @@
+
+# Clear all objects from the environment
+rm(list = ls())
+
+# Optionally, clear any plots and reset graphics settings
+graphics.off()
+
 ####################################################
 ### LOAD LIBRARIES
 
@@ -12,10 +19,11 @@ library("poliscidata")
 # Set working directory to directory where the R-script is saved
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 # first load in species_location file
-species_location <- read.csv("Output_Preparation/Species_Location.csv")
+species_location <- read.csv("test.csv", sep = ";")
 # Reshape data from wide to long format
 long <- pivot_longer(species_location, !Specieslist)
 # Filter rows where 'value' is greater than 0
+long <- which[long$Specieslist == "Acartia bifilosa"]
 long <- long[long$value > 0, ]
 
 ####################################################
@@ -27,7 +35,7 @@ Distribution_seadistance <- function(species_name, species_location){
   # read csv file per species
   print(paste0("species_name: ", species_name))
   print(paste0("species_location: ", species_location))
-  distance_file <- paste0("Output_calculations/sea_distances/", species_name, "_distancesTo_", species_location, ".csv")
+  distance_file <- paste0("Output_calculations/sea_distances/", species_name, "_distancesTo_", species_location,"_sea", ".csv")
   
   distances <- read.csv(distance_file, header = TRUE)
   # clean dataframe from rows with Inf in them
@@ -71,8 +79,10 @@ Distribution_seadistance <- function(species_name, species_location){
 # error lists initiations to store error messages in
 error <- c()
 
+name<-"Acartia bifilosa"
+loc<-"Koster"
 # executing iteration for the long file!
-plot <- Map(Distribution_seadistance, long$Specieslist, long$name)
+plot <- Map(Distribution_seadistance, name, loc)
 
 # write error files
 print(error)
@@ -89,7 +99,7 @@ write.table(error, file = file_error, append = TRUE, quote = FALSE,
 
 Distribution_combDistance <- function(species_name, species_location){
   # make variables with filenames in which distances are saved
-  sea_distance_file <- paste0("Output_calculations/sea_distances/", species_name, "_distancesTo_", species_location, ".csv")
+  sea_distance_file <- paste0("Output_calculations/sea_distances/", species_name, "_distancesTo_", species_location,"_sea", ".csv")
   fly_distance_file <- paste0("Output_calculations/fly_distances/", species_name, "_distancesTo_", species_location, ".csv")
   
   # read the files
@@ -149,7 +159,7 @@ Distribution_combDistance <- function(species_name, species_location){
 }
 
 # executing iteration for the long file!
-plot <- Map(Distribution_combDistance, long$Specieslist, long$name)
+plot <- Map(Distribution_combDistance, name, loc)
 
 #############################################################
 # Make histograms of locations
@@ -160,7 +170,7 @@ Location_histograms <- function(species_name, species_location){
   print(paste0("species_name: ", species_name))
   print(paste0("species_location: ", species_location))
   # make variable with filename
-  distance_file <- paste0("Output_calculations/sea_distances/", species_name, "_distancesTo_", species_location, ".csv")
+  distance_file <- paste0("Output_calculations/sea_distances/", species_name, "_distancesTo_", species_location,"_sea", ".csv")
   # read csv file per species
   distance_file <- read.csv(distance_file, header = TRUE)
   # convert to meters
@@ -202,7 +212,7 @@ Location_histograms <- function(species_name, species_location){
 }
 
 # executing iteration for the long file!
-plot <- Map(Location_histograms, long$Specieslist, long$name)
+plot <- Map(Location_histograms, name, loc)
 
 
 
@@ -216,7 +226,7 @@ Year_histograms <- function(species_name, species_location){
   print(paste0("species_location: ", species_location))
   # make variable with filename
   distance_file <- paste0("Output_calculations/sea_distances/", species_name,
-                          "_distancesTo_", species_location, ".csv")
+                          "_distancesTo_", species_location,"_sea", ".csv")
   
   # read the csv files
   distance_file <- read.csv(distance_file, header = TRUE)
@@ -278,5 +288,5 @@ Year_histograms <- function(species_name, species_location){
 }
 
 # executing iteration for the long file!
-plot <- Map(Year_histograms, long$Specieslist, long$name)
+plot <- Map(Year_histograms, name, loc)
 
