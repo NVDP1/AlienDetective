@@ -12,6 +12,9 @@ source("src/functions.R")
 # Reset graphics settings
 graphics.off()
 
+.libPaths(c("/cfs/klemming/home/n/nielsvdp/Calculation_Distance/packages",
+            "/cfs/klemming/pdc/software/dardel/23.12/eb/software/R/4.4.1-cpeGNU-23.12/lib64/R/library"))
+
 # NB! No packages loaded here, only installed if missing. Better to use explicit namespaces instead [e.g. raster::extract() rather than just extract()].
 # That way it's easier to maintain the code and see which packages are actually required as development progresses, and you also avoid clashes between
 # package namespaces, making sure that the correct function is always used regardless of which other packages the user has installed and loaded.
@@ -22,6 +25,8 @@ for (package in packages) {
     install.packages(package)
   }
 }
+
+setwd("/cfs/klemming/home/n/nielsvdp/Calculation_Distance")
 # If installation fails for a package because it is "not available for your version of R", try installing from source
 # install.packages(package, pkgType = "source")
 # Install the rnaturalearthhires package for a higher-resolution vector map
@@ -33,7 +38,7 @@ args <- commandArgs(trailingOnly = TRUE)
 species_location_path <- args[1]  # First argument: path to species file
 location_coordinates_path <- args[2]  # Second argument: path to coordinates file
 rasterized_path <- args[3]  # Third argument: path to rasterized sf-formatted world map (RDS file)
-cost_matrix_path <- # Fourth argument: path to transition matrix (RDS file)
+cost_matrix_path <- args[4] # Fourth argument: path to transition matrix (RDS file)
 output_dir <- args[5]  # Fifth argument: output directory
 
 # Set file paths
@@ -60,7 +65,7 @@ location_coordinates <- read.csv(location_coordinates_path, sep = ";")
 # INSERT LIST OF NATIVE SPECIES TO REMOVE NATIVE SPECIES FROM DF LIST
 
 # Subselect species to run the script for (optional). Can also be used to exclude species, e.g. known natives, by negating the which function
-species_subset <- c("Paracerceis sculpta")
+species_subset <- c("Celleporaria brunnea")
 species_location <- species_location[which(species_location$Specieslist %in% species_subset),]
 #species_location <- species_location[c(2, 10, 57),] # Or subset a few species to try at random
 
@@ -194,6 +199,8 @@ for (species in species_location[,1]) {
 ################
 
 library("ggplot2")
+library(tidyr)
+library(dplyr)
 required_columns <- c("latitude", "longitude", "year", "month", "country", "basisOfRecord")
 
 # Iterate over species for which a csv file exists
@@ -202,74 +209,131 @@ for (species in species_location[,1]) {
   species_dir <- file.path(output_dir, species_)
   if (file.exists(file.path(species_dir, paste0(species_, ".csv")))) {
     distance_df <- read.csv(file.path(species_dir, paste0(species_, ".csv")))
+    long_df <- distance_df %>%
+      pivot_longer(
+        cols = ends_with("_seaway") | ends_with("_geodesic"),
+        names_to = "location",
+        values_to = "x"
+      )%>%
+      separate(location, into = c("location", "DistanceType"), sep = "_")
+    long_sea <- long_df %>%
+      filter(grepl("seaway", DistanceType))
+    long_geo <- long_df %>%
+      filter(grepl("geodesic", DistanceType))
+    
   } else {
     warning("No output directory found for species \"", species, "\". Skipping plotting.")
     next
   }
   
-  # Iterate over locations in that csv file
-  for (location in unique(gsub("_seaway|_geodesic", "", colnames(distance_df[,-which(colnames(distance_df) %in% required_columns)])))) {
-    
-    ### BELOW PART IS UNFINISHED
-    
-    seaway_df <- distance_df[,c(required_columns, paste0(location, "_seaway"))]
-    seaway_df <- reshape(seaway_df,
-                         varying   = vals,           # the columns to stack
-                         v.names   = "value",        # name of the value column
-                         timevar   = "variable",     # name of the column that will hold the former column names
-                         times     = vals,           # the values to put in that new “variable” column
-                         idvar     = "Specieslist",  # keep Specieslist as your ID
-                         direction = "long")
-    
-    both_df <- distance_df[,c(required_columns, paste0(location, "_geodesic"))]
-    both_df <- reshape(both_df,
-                       varying   = vals,           # the columns to stack
-                       v.names   = "value",        # name of the value column
-                       timevar   = "variable",     # name of the column that will hold the former column names
-                       times     = vals,           # the values to put in that new “variable” column
-                       idvar     = "Specieslist",  # keep Specieslist as your ID
-                       direction = "long")
-    
-    # Add distance type column, used by plot.dist.both function
-    seaway_df$type <- "seaway"
     # Assign year categories
     year_categories <- c("1965-1985", "1985-1990", "1990-1995",
                          "1995-2000", "2000-2005", "2005-2010",
                          "2010-2015", "2015-2020", "2020-2025")
-    seaway_df$year_category <- sapply(seaway_df$year, assign_year_category(year_categories = year_categories))
-    both_df$year_category <- sapply(both_df$year, assign_year_category(year_categories = year_categories))
+    long_sea$year_category <- sapply(long_sea$year, assign_year_category)
+    long_geo$year_category <- sapply(long_sea$year, assign_year_category)
     # clean dataframe from rows with Inf in them
-    seaway_df <- seaway_df[is.finite(seaway_df$Koster_seaway), ]
+    long_sea <- long_sea[is.finite(long_sea$x), ]
     # select only distances below 40000km
-    seaway_df <- subset(seaway_df, Koster_seaway < 40000)
+    long_sea <- subset(long_sea, x < 40000)
     
-    plot <- plot.dist.sea(
-      species = species,
-      location = location,
-      distances = seaway_df,
-      output_dir = species_dir
-    )
-    
-    plot <- plot.dist.both(
-      species = species,
-      location = location,
-      distances = both_df,
-      output_dir = species_dir
-    )
-    
-    plot <- plot.dist.by.country(
-      species = species,
-      location = location,
-      distances = seaway_df,
-      output_dir = species_dir
-    )
-    
-    plot <- plot.dist.by.year(
-      species = species,
-      location = location,
-      distances = seaway_df,
-      output_dir = species_dir
-    )
-    
-  }
+    for (loc in unique(long_sea$location)) {
+      sea_loc_data <- long_sea[long_sea$location == loc, ]
+      geo_loc_data <- long_geo[long_geo$location == loc, ]
+      
+      combined_distances <- rbind(sea_loc_data, geo_loc_data)
+      
+      # Plot functions by location
+      plot_dist_sea <- plot.dist.sea(
+        species = species,
+        location = loc,
+        distances = sea_loc_data$x,
+        output_dir = species_dir
+      )
+      
+      plot_both <- plot.dist.both(
+        species = species,
+        location = loc,
+        distances = combined_distances$x,
+        output_dir = species_dir
+      )
+      
+      plot_country <- plot.dist.by.country(
+        species = species,
+        location = loc,
+        distances = sea_loc_data$x,
+        output_dir = species_dir
+      )
+      
+      plot_year <- plot.dist.by.year(
+        species = species,
+        location = loc,
+        distances = sea_loc_data$x,
+        output_dir = species_dir
+      )
+    }
 }
+plot_dist_sea
+plot_both
+plot_country
+plot_year
+
+
+library(ggplot2)
+library(gganimate)
+
+ggplot(long_sea, aes(x = longitude, y = latitude)) +
+  geom_point(aes(color = location, shape = location), size = 3, alpha = 0.8) +
+  scale_color_brewer(palette = "Set1") +
+  theme_minimal() +
+  labs(title = paste0("Spatiotemporal spread of ", species, " Year: {frame_time}"), x = "Longitude", y = "Latitude") +
+  transition_time(year) +
+  shadow_mark(past = TRUE, alpha = 0.3)
+animate(last_plot(), renderer = gifski_renderer(), width = 800, height = 600)
+anim_save("species_spread.gif")
+
+
+library(dplyr)
+library(geosphere)  # for distHaversine
+library(ggplot2)
+
+long_sea$species_name <- "Balanus trigonus"
+# Step 1: Compute annual centroids
+centroids <- long_sea %>%
+  group_by(species_name, year) %>%
+  summarise(
+    mean_lat = mean(latitude, na.rm = TRUE),
+    mean_lon = mean(longitude, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  arrange(species, year)
+
+# Step 2: Calculate distance between consecutive centroids per species
+centroids <- centroids %>%
+  group_by(species_name) %>%
+  mutate(
+    prev_lat = lag(mean_lat),
+    prev_lon = lag(mean_lon),
+    dist_km = distHaversine(
+      cbind(prev_lon, prev_lat),
+      cbind(mean_lon, mean_lat)
+    ) / 1000  # meters to km
+  ) %>%
+  ungroup()
+ggplot(centroids, aes(x = year, y = dist_km, group = species, color = species_name)) +
+  geom_line(size = 1.2) +
+  geom_point(size = 2) +
+  labs(
+    title = "Centroid Movement Over Time",
+    x = "Year",
+    y = "Distance moved (km)"
+  ) +
+  theme_minimal() +
+  scale_color_viridis_d(option = "plasma") +
+  theme(
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
+    axis.text = element_text(size = 12),
+    axis.title = element_text(size = 14)
+  )
+
+

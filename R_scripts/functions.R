@@ -153,21 +153,25 @@ calculate.distances <- function(gbif_occurrences, latitude, longitude, raster_ma
 
 # Make histogram of sea distances
 plot.dist.sea <- function(species, location, distances, output_dir) {
-  
+  print(paste0("species_name: ", species))
+  print(paste0("species_location: ", sea_loc_data$location))
+  hist_info <- hist(sea_loc_data$x, plot = FALSE)
+  max_count <- max(hist_info$counts)
   # make histograms of distances per species, with filtering on distance limit 40000
-  plot <- ggplot(distances, aes(x = x)) +
-    geom_histogram(binwidth = 50, fill = "blue", color = "black", boundary = 0) +
-    labs(title = "Histogram of Distances", x = "Distance in km", y = "Frequency of species") +
-    theme_bw() +
+  plot <- ggplot(sea_loc_data, aes(x = x, fill = location)) +
+    geom_histogram(binwidth = 50) +  # default is position = "stack"
+    labs(title = paste("Distances for", species), x = "Distance (km)", y = "Count") +
+    theme_minimal()+
     #scale_fill_brewer(palette = "Set1") +
-    ggtitle(paste0("Distribution of ", species, " from ", location)) +
+    ggtitle(paste0("Distribution of ", species, " from all occurence locations")) +
     theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"), # set title font size, placement with hjust
           plot.margin = margin(0.3, 0.3, 0.4, 0.4, "cm"),
-          axis.text = element_text(size = 16),           # Set font size for axis numbers
+          axis.text = element_text(size = 10),           # Set font size for axis numbers
           axis.title = element_text(size = 20)) +         # Set font size for axis titles
-    scale_x_continuous(breaks = seq(0, 3000, by = 250), expand = c(0, 0)) +
+    scale_x_continuous(breaks = seq(0, 5700, by = 250), expand = c(0, 0)) +
     scale_y_continuous(expand = c(0, 0)) +
-    coord_cartesian(xlim = c(0, 3000)) # Use coord_cartesian for setting limits
+    coord_cartesian(xlim = c(0, 5700), ylim = c(0,max_count*1.1))
+  
   
   if(!dir.exists(output_dir)) {
     dir.create(output_dir, recursive = TRUE)
@@ -180,30 +184,28 @@ plot.dist.sea <- function(species, location, distances, output_dir) {
 
 # Make combined histogram of sea distances and fly distances
 plot.dist.both <- function(species, location, distances, output_dir) {
-  
-  plot <- ggplot(distances, aes(x = x, fill = type)) +
+  combined_distances <- rbind(sea_loc_data, geo_loc_data)
+  hist_info <- hist(combined_distances$x, plot = FALSE)
+  max_count <- max(hist_info$counts)
+  plot <- ggplot(combined_distances, aes(x = x, fill = DistanceType)) +
     geom_histogram(binwidth = 50, color="#e9ecef", alpha=0.6, position = 'identity') +
     theme_bw() +
     #scale_fill_brewer(palette = "Set1") +
     labs(x = "Distance in km", y = "Frequency") +
-    ggtitle(paste0("Distribution of ", species, " from ", location)) +
+    ggtitle(paste0("Distribution of ", species, " from sea and fly distances")) +
     theme(
       plot.title = element_text(hjust = 0.5, size = 20, face = "bold"), # set title font size, placement
       plot.margin = margin(0.3, 0.3, 0.4, 0.4, "cm"),
-      axis.text = element_text(size = 16),  # Set font size for axis numbers
-      axis.title = element_text(size = 20), # Set font size for title
+      axis.text = element_text(size = 10),  # Set font size for axis numbers
+      axis.title = element_text(size = 16), # Set font size for title
       legend.title = element_text(size = 18, face="bold"), # Settings for legend title
       legend.text = element_text(size = 16)) +  # settings for legend text
-    scale_x_continuous(breaks = seq(0, 3000, by = 250), expand = c(0, 0)) +  # settings for x axis
+    scale_x_continuous(breaks = seq(0, 5700, by = 250), expand = c(0, 0)) +  # settings for x axis
     scale_y_continuous(expand = c(0, 0)) +
     # used expand to make sure the axes are on the lines of the axes and not above them floating
-    coord_cartesian(xlim = c(0, 3000)) + # Use coord_cartesian for setting limits
+    coord_cartesian(xlim = c(0, 5700), ylim = c(0,max_count*1.1)) + # Use coord_cartesian for setting limits
     # set legend title and labels
-    scale_fill_discrete(
-      name = "Distance type",
-      breaks = c("sea", "geodesic"),
-      labels = c("Sea distance", "Geodesic distance")) +
-    labs(x = "Distance in km", y = "Frequency")
+    labs(x = "Distance in km", y = "Frequency", fill = "DistanceType")
   
   if(!dir.exists(output_dir)) {
     dir.create(output_dir, recursive = TRUE)
@@ -216,8 +218,9 @@ plot.dist.both <- function(species, location, distances, output_dir) {
 
 # Make histograms of locations
 plot.dist.by.country <- function(species, location, distances, output_dir) {
-  
-  plot <- ggplot(distances, aes(x = x, fill = country)) +
+  hist_info <- hist(sea_loc_data$x, plot = FALSE)
+  max_count <- max(hist_info$counts)
+  plot <- ggplot(sea_loc_data, aes(x = x, fill = country)) +
     geom_histogram(binwidth = 50, boundary = 0, position = "stack") +  # adjust the binwidth to personal preference
     labs(title = paste0("Frequencies of Sea distances/country for ", species," in ", location),
          x = "Sea distance in km", y = "Frequency of species") +
@@ -225,14 +228,14 @@ plot.dist.by.country <- function(species, location, distances, output_dir) {
     #scale_fill_brewer(palette = "Set1") +  # You can choose a different palette if you like
     theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"), # set title font size, placement
           plot.margin = margin(0.3, 0.3, 0.4, 0.4, "cm"),
-          axis.text = element_text(size = 16),           # Set font size for axis numbers
+          axis.text = element_text(size = 10),           # Set font size for axis numbers
           axis.title = element_text(size = 20),
           legend.title = element_text(size = 14),   # Increase legend title size
           legend.text = element_text(size = 12),    # Increase legend text size
           legend.key.size = unit(1.5, "lines")) +   # Increase legend key size
-    scale_x_continuous(breaks = seq(0, 3000, by = 250), expand = c(0, 0)) +
+    scale_x_continuous(breaks = seq(0, 5700, by = 250), expand = c(0, 0)) +
     scale_y_continuous(expand = c(0, 0)) +
-    coord_cartesian(xlim = c(0, 3000)) # Use coord_cartesian for setting limits
+    coord_cartesian(xlim = c(0, 5700), ylim = c(0,max_count*1.1)) # Use coord_cartesian for setting limits
   
   if(!dir.exists(output_dir)) {
     dir.create(output_dir, recursive = TRUE)
@@ -244,7 +247,7 @@ plot.dist.by.country <- function(species, location, distances, output_dir) {
 
 
 # Make year categories (Used by plot.dist.by.year function)
-assign_year_category <- function(year, year_categories) {
+assign_year_category <- function(year) {
   if (is.na(year)) {
     return(NA)   # return NA when year is not present
   }
@@ -260,8 +263,9 @@ assign_year_category <- function(year, year_categories) {
 
 # Make histograms of year categories
 plot.dist.by.year <- function(species, location, distances, output_dir) {
-  
-  plot <- ggplot(distances, aes(x = x, fill = year_category)) +
+  hist_info <- hist(sea_loc_data$x, plot = FALSE)
+  max_count <- max(hist_info$counts)
+  plot <- ggplot(sea_loc_data, aes(x = x, fill = year_category)) +
     geom_histogram(binwidth = 50, boundary = 0, position = "stack") +  # adjust the binwidth to personal preference
     labs(title = paste0("Frequencies of Sea distances/year for ", species," in ", location),
          x = "Sea distance in km", y = "Frequency of species") +
@@ -269,14 +273,14 @@ plot.dist.by.year <- function(species, location, distances, output_dir) {
     scale_fill_brewer(palette = "YlOrRd", na.value = "black") + # You can choose a different palette if you like
     theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"), # set title font size, placement
           plot.margin = margin(0.3, 0.3, 0.4, 0.4, "cm"),
-          axis.text = element_text(size = 16),           # Set font size for axis numbers
+          axis.text = element_text(size = 10),           # Set font size for axis numbers
           axis.title = element_text(size = 20),
           legend.title = element_text(size = 14),   # set legend title size
           legend.text = element_text(size = 12),    # set legend text size
           legend.key.size = unit(1.5, "lines")) +   # set legend key size
-    scale_x_continuous(breaks = seq(0, 3000, by = 250), expand = c(0, 0)) +
+    scale_x_continuous(breaks = seq(0, 5700, by = 250), expand = c(0, 0)) +
     scale_y_continuous(expand = c(0, 0)) +
-    coord_cartesian(xlim = c(0, 3000)) # Use coord_cartesian for setting limits
+    coord_cartesian(xlim = c(0, 5700), ylim = c(0,max_count*1.1)) # Use coord_cartesian for setting limits
   
   if(!dir.exists(output_dir)) {
     dir.create(output_dir, recursive = TRUE)
