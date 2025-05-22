@@ -19,7 +19,7 @@ graphics.off()
 # That way it's easier to maintain the code and see which packages are actually required as development progresses, and you also avoid clashes between
 # package namespaces, making sure that the correct function is always used regardless of which other packages the user has installed and loaded.
 message(">>> [INIT] Checking for required packages...")
-packages <- c("rgbif", "sf", "sp", "gdistance", "geodist", "raster", "fasterize", "ggplot2", "rnaturalearth", "rnaturalearthdata","geosphere")
+packages <- c("rgbif", "sf", "sp", "gdistance", "geodist", "raster", "fasterize", "ggplot2", "rnaturalearth", "rnaturalearthdata","geosphere","leaflet","htmlwidgets")
 for (package in packages) {
   if(!requireNamespace(package, quietly = TRUE)) {
     install.packages(package)
@@ -65,7 +65,7 @@ location_coordinates <- read.csv(location_coordinates_path, sep = ";")
 # INSERT LIST OF NATIVE SPECIES TO REMOVE NATIVE SPECIES FROM DF LIST
 
 # Subselect species to run the script for (optional). Can also be used to exclude species, e.g. known natives, by negating the which function
-species_subset <- c("Celleporaria brunnea")
+species_subset <- c("Halothrix lumbricalis")
 species_location <- species_location[which(species_location$Specieslist %in% species_subset),]
 #species_location <- species_location[c(2, 10, 57),] # Or subset a few species to try at random
 
@@ -180,8 +180,26 @@ for (species in species_location[,1]) {
                                   cost_matrix = cost_matrix)
     
     if (!(is.null(result$seaway) & is.null(result$geodesic))) {
+      #NEW CODE ADDED HERE
       gbif_occurrences[,paste0(location, "_seaway")] <- result$sea_distances
       gbif_occurrences[,paste0(location, "_geodesic")] <- result$geodesic_distances
+      gbif_occurrences$corrected_lat <- latitude
+      gbif_occurrences$corrected_lon <- longitude
+      
+      # OPTIONAL: Plot leaflet map of corrected point and GBIF points
+      map_df <- gbif_occurrences
+      map_df$point_type <- "GBIF"
+      # Add corrected eDNA point as a separate row
+      edna_row <- data.frame(
+        latitude = latitude,
+        longitude = longitude,
+        year = NA,
+        point_type = "eDNA"
+      )
+      map_df <- rbind(map_df[,c("latitude", "longitude", "year", "point_type")], edna_row)
+      
+      plot_leaflet_map(df = map_df, species_name = species, output_dir = species_dir)
+      #ENDED NEW CODE HERE
     } else {
       gbif_occurrences[,paste0(location, "_seaway")] <- NA
       gbif_occurrences[,paste0(location, "_geodesic")] <- NA
@@ -232,11 +250,13 @@ for (species in species_location[,1]) {
                          "2010-2015", "2015-2020", "2020-2025")
     long_sea$year_category <- sapply(long_sea$year, assign_year_category)
     long_geo$year_category <- sapply(long_sea$year, assign_year_category)
+    
     # clean dataframe from rows with Inf in them
     long_sea <- long_sea[is.finite(long_sea$x), ]
     # select only distances below 40000km
     long_sea <- subset(long_sea, x < 40000)
     
+    #Make a for loop that goes over every occurence location to make seperate graphs
     for (loc in unique(long_sea$location)) {
       sea_loc_data <- long_sea[long_sea$location == loc, ]
       geo_loc_data <- long_geo[long_geo$location == loc, ]

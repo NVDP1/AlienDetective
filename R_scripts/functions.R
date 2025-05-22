@@ -55,7 +55,7 @@ fetch_gbif_data <- function(species,
   }
 }
 
-ensure_point_in_sea <- function(lat, lon, raster_map, max_distance_km = 100) {
+ensure_point_in_sea <- function(lat, lon, raster_map, max_distance_km = 10) {
   # Create the original point
   point <- sp::SpatialPoints(cbind(lon, lat), proj4string = sp::CRS("+init=EPSG:4326"))
   
@@ -67,7 +67,7 @@ ensure_point_in_sea <- function(lat, lon, raster_map, max_distance_km = 100) {
   
   # Generate a grid of nearby points (search radius: max_distance_km)
   dists <- seq(0.5, max_distance_km, by = 0.5) * 1000  # meters
-  bearings <- seq(0, 359, by = 10)
+  bearings <- seq(0, 359, by = 10) #the degrees
   
   for (dist in dists) {
     for (b in bearings) {
@@ -289,3 +289,38 @@ plot.dist.by.year <- function(species, location, distances, output_dir) {
          plot = plot, width = 2400, height = 1200, units = "px", dpi = 300)
   return(plot)
 }
+# In src/functions.R
+
+plot_leaflet_map <- function(df, species_name, output_dir = NULL) {
+  if (!requireNamespace("leaflet", quietly = TRUE)) {
+    install.packages("leaflet")
+  }
+  library(leaflet)
+  
+  # Basic validation
+  if (!("latitude" %in% tolower(names(df))) || !("longitude" %in% tolower(names(df)))) {
+    stop("Dataframe must contain 'latitude' and 'longitude' columns")
+  }
+  
+  lat_col <- grep("latitude", names(df), ignore.case = TRUE, value = TRUE)
+  lon_col <- grep("longitude", names(df), ignore.case = TRUE, value = TRUE)
+  
+  map <- leaflet(df) %>%
+    addTiles() %>%
+    addCircleMarkers(
+      lng = ~get(lon_col), lat = ~get(lat_col),
+      popup = ~paste("Year:", df$year),
+      color = "blue", radius = 3, stroke = FALSE, fillOpacity = 0.6
+    ) %>%
+    addLegend("bottomright", colors = "blue", labels = "Observations",
+              title = species_name)
+  
+  # Optional: save HTML map
+  if (!is.null(output_dir)) {
+    html_file <- file.path(output_dir, paste0(gsub(" ", "_", species_name), "_map.html"))
+    htmlwidgets::saveWidget(map, file = html_file, selfcontained = TRUE)
+  }
+  
+  return(map)
+}
+
