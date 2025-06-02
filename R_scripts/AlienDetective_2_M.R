@@ -65,7 +65,7 @@ location_coordinates <- read.csv(location_coordinates_path, sep = ";")
 # INSERT LIST OF NATIVE SPECIES TO REMOVE NATIVE SPECIES FROM DF LIST
 
 # Subselect species to run the script for (optional). Can also be used to exclude species, e.g. known natives, by negating the which function
-species_subset <- c("Amphibalanus amphitrite")
+species_subset <- c("Palaemon elegans")
 species_location <- species_location[which(species_location$Specieslist %in% species_subset),]
 #species_location <- species_location[c(2, 10, 57),] # Or subset a few species to try at random
 
@@ -253,6 +253,7 @@ for (species in species_location[,1]) {
   
   # clean dataframe from rows with Inf in them
   long_sea <- long_sea[!is.na(long_sea$x), ]
+  long_sea <- long_sea[!is.infinite(long_sea$x),]
   # select only distances below 40000km
   #long_sea <- subset(long_sea, x < 40000)
   country_final_plot <- country.final(

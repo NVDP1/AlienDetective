@@ -151,26 +151,52 @@ calculate.distances <- function(gbif_occurrences, latitude, longitude, raster_ma
 ### PLOTTING FUNCTIONS ###
 ##########################
 
-# Make histogram of sea distances
-plot.dist.sea <- function(species, location, distances, output_dir) {
-  print(paste0("species_name: ", species))
-  print(paste0("species_location: ", sea_loc_data$location))
-  hist_info <- hist(sea_loc_data$x, plot = FALSE)
-  max_count <- max(hist_info$counts)
-  # make histograms of distances per species, with filtering on distance limit 40000
-  plot <- ggplot(sea_loc_data, aes(x = x, fill = location)) +
-    geom_histogram(binwidth = 50) +  # default is position = "stack"
-    labs(title = paste("Distances for", species), x = "Distance (km)", y = "Count") +
-    theme_minimal()+
-    #scale_fill_brewer(palette = "Set1") +
-    ggtitle(paste0("Distribution of ", species, " from all occurence locations")) +
-    theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"), # set title font size, placement with hjust
+country.final <- function(species, distances, output_dir) {
+  max_x <- max(long_sea$x)
+  plot <- ggplot(long_sea, aes(x = x, fill = location)) +
+    geom_histogram(aes(y = after_stat(count / sum(count) * 100)),binwidth = 50, boundary = 0, position = "stack") + # adjust the binwidth to personal preference
+    labs(title = paste0("Frequencies of Sea distances for ", species," from all ARMS locations" ),
+         x = "Sea distance (km)", y = "Percentage of total occurrences (%)") +
+    theme_bw() +
+    #scale_fill_brewer(palette = "Set1") +  # You can choose a different palette if you like
+    theme(plot.title = element_text(hjust = 0.5, size = 13, face = "bold"), # set title font size, placement
           plot.margin = margin(0.3, 0.3, 0.4, 0.4, "cm"),
           axis.text = element_text(size = 10),           # Set font size for axis numbers
-          axis.title = element_text(size = 20)) +         # Set font size for axis titles
-    scale_x_continuous(breaks = seq(0, 5700, by = 250), expand = c(0, 0)) +
+          axis.title = element_text(size = 12),
+          legend.title = element_text(size = 13),   # Increase legend title size
+          legend.text = element_text(size = 10),    # Increase legend text size
+          legend.key.size = unit(1, "lines"),
+          axis.text.x = element_text(angle = 45, hjust = 1)) +   # Increase legend key size
+    scale_x_continuous(breaks = seq(0, max_x*1.1, by = 500), expand = c(0, 0))+
     scale_y_continuous(expand = c(0, 0)) +
-    coord_cartesian(xlim = c(0, 5700), ylim = c(0,max_count*1.1))
+    coord_cartesian(xlim = c(0, max_x*1.1), ylim = c(0,20)) # Use coord_cartesian for setting limits
+  
+  if(!dir.exists(output_dir)) {
+    dir.create(output_dir, recursive = TRUE)
+  }
+  ggsave(filename = file.path(output_dir, paste0(gsub(" ", "_", species), "_from_all_ARMS_locations", ".png")), 
+         plot = plot, width = 2400, height = 1200, units = "px", dpi = 300)
+  return(plot)
+}
+
+# Make histogram of sea distances
+plot.dist.sea <- function(species, location, distances, output_dir) {
+  max_x <- max(sea_loc_data$x)
+  # make histograms of distances per species, with filtering on distance limit 40000
+  plot <- ggplot(sea_loc_data, aes(x = x, fill = location)) +
+    geom_histogram(aes(y = after_stat(count / sum(count) * 100)),binwidth = 50, boundary = 0, position = "stack", alpha = 0.7) +  # default is position = "stack"
+    labs(title = paste("Distances for", species), x = "Sea distance (km)", y = "Percentage of total occurrences (%)") +
+    theme_minimal()+
+    #scale_fill_brewer(palette = "Set1") +
+    ggtitle(paste0("Distribution of ", species, " from ", loc)) +
+    theme(plot.title = element_text(hjust = 0.5, size = 15, face = "bold"), # set title font size, placement with hjust
+          plot.margin = margin(0.3, 0.3, 0.4, 0.4, "cm"),
+          axis.text = element_text(size = 10),           # Set font size for axis numbers
+          axis.title = element_text(size = 12),
+          axis.text.x = element_text(angle = 45, hjust = 1)) +         # Set font size for axis titles
+    scale_x_continuous(breaks = seq(0, max_x*1.1, by = 500), expand = c(0, 0)) +
+    scale_y_continuous(expand = c(0, 0)) +
+    coord_cartesian(xlim = c(0, max_x*1.1), ylim = c(0,100))
   
   
   if(!dir.exists(output_dir)) {
@@ -181,31 +207,28 @@ plot.dist.sea <- function(species, location, distances, output_dir) {
   return(plot)
 }
 
-
 # Make combined histogram of sea distances and fly distances
 plot.dist.both <- function(species, location, distances, output_dir) {
   combined_distances <- rbind(sea_loc_data, geo_loc_data)
-  hist_info <- hist(combined_distances$x, plot = FALSE)
-  max_count <- max(hist_info$counts)
+  max_x <- max(sea_loc_data$x)
   plot <- ggplot(combined_distances, aes(x = x, fill = DistanceType)) +
-    geom_histogram(binwidth = 50, color="#e9ecef", alpha=0.6, position = 'identity') +
+    geom_histogram(aes(y = after_stat(count / sum(count) * 100)),binwidth = 50, color="#e9ecef", alpha=0.6, position = 'identity') +
     theme_bw() +
-    #scale_fill_brewer(palette = "Set1") +
-    labs(x = "Distance in km", y = "Frequency") +
-    ggtitle(paste0("Distribution of ", species, " from sea and fly distances")) +
+    ggtitle(paste0("Distribution of ", species," from sea and fly distances")) +
     theme(
-      plot.title = element_text(hjust = 0.5, size = 20, face = "bold"), # set title font size, placement
+      plot.title = element_text(hjust = 0.5, size = 12, face = "bold"), # set title font size, placement
       plot.margin = margin(0.3, 0.3, 0.4, 0.4, "cm"),
       axis.text = element_text(size = 10),  # Set font size for axis numbers
-      axis.title = element_text(size = 16), # Set font size for title
-      legend.title = element_text(size = 18, face="bold"), # Settings for legend title
-      legend.text = element_text(size = 16)) +  # settings for legend text
-    scale_x_continuous(breaks = seq(0, 5700, by = 250), expand = c(0, 0)) +  # settings for x axis
+      axis.title = element_text(size = 12), # Set font size for title
+      legend.title = element_text(size = 13, face="bold"), # Settings for legend title
+      legend.text = element_text(size = 10),
+      axis.text.x = element_text(angle = 45, hjust = 1)) +  # settings for legend text
+    scale_x_continuous(breaks = seq(0, max_x*1.1, by = 500), expand = c(0, 0)) +  # settings for x axis
     scale_y_continuous(expand = c(0, 0)) +
     # used expand to make sure the axes are on the lines of the axes and not above them floating
-    coord_cartesian(xlim = c(0, 5700), ylim = c(0,max_count*1.1)) + # Use coord_cartesian for setting limits
+    coord_cartesian(xlim = c(0, max_x*1.1), ylim = c(0,100)) + # Use coord_cartesian for setting limits
     # set legend title and labels
-    labs(x = "Distance in km", y = "Frequency", fill = "DistanceType")
+    labs(x = "Sea distance (km)", y = "Percentage of total occurrences (%)", fill = "DistanceType")
   
   if(!dir.exists(output_dir)) {
     dir.create(output_dir, recursive = TRUE)
@@ -218,24 +241,24 @@ plot.dist.both <- function(species, location, distances, output_dir) {
 
 # Make histograms of locations
 plot.dist.by.country <- function(species, location, distances, output_dir) {
-  hist_info <- hist(sea_loc_data$x, plot = FALSE)
-  max_count <- max(hist_info$counts)
+  max_x <- max(sea_loc_data$x)
   plot <- ggplot(sea_loc_data, aes(x = x, fill = country)) +
-    geom_histogram(binwidth = 50, boundary = 0, position = "stack") +  # adjust the binwidth to personal preference
+    geom_histogram(aes(y = after_stat(count / sum(count) * 100)),binwidth = 50, boundary = 0, position = "stack") +  # adjust the binwidth to personal preference
     labs(title = paste0("Frequencies of Sea distances/country for ", species," in ", location),
-         x = "Sea distance in km", y = "Frequency of species") +
+         x = "Sea distance (km)", y = "Percentage of total occurrences (%)") +
     theme_bw() +
     #scale_fill_brewer(palette = "Set1") +  # You can choose a different palette if you like
-    theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"), # set title font size, placement
+    theme(plot.title = element_text(hjust = 0.5, size = 12, face = "bold"), # set title font size, placement
           plot.margin = margin(0.3, 0.3, 0.4, 0.4, "cm"),
           axis.text = element_text(size = 10),           # Set font size for axis numbers
-          axis.title = element_text(size = 20),
+          axis.title = element_text(size = 12),
           legend.title = element_text(size = 14),   # Increase legend title size
           legend.text = element_text(size = 12),    # Increase legend text size
-          legend.key.size = unit(1.5, "lines")) +   # Increase legend key size
-    scale_x_continuous(breaks = seq(0, 5700, by = 250), expand = c(0, 0)) +
+          legend.key.size = unit(1.5, "lines"),
+          axis.text.x = element_text(angle = 45, hjust = 1)) +   # Increase legend key size
+    scale_x_continuous(breaks = seq(0, max_x*1.1, by = 500), expand = c(0, 0)) +
     scale_y_continuous(expand = c(0, 0)) +
-    coord_cartesian(xlim = c(0, 5700), ylim = c(0,max_count*1.1)) # Use coord_cartesian for setting limits
+    coord_cartesian(xlim = c(0, max_x*1.1), ylim = c(0,100)) # Use coord_cartesian for setting limits
   
   if(!dir.exists(output_dir)) {
     dir.create(output_dir, recursive = TRUE)
@@ -263,24 +286,23 @@ assign_year_category <- function(year) {
 
 # Make histograms of year categories
 plot.dist.by.year <- function(species, location, distances, output_dir) {
-  hist_info <- hist(sea_loc_data$x, plot = FALSE)
-  max_count <- max(hist_info$counts)
   plot <- ggplot(sea_loc_data, aes(x = x, fill = year_category)) +
-    geom_histogram(binwidth = 50, boundary = 0, position = "stack") +  # adjust the binwidth to personal preference
+    geom_histogram(aes(y = after_stat(count / sum(count) * 100)),binwidth = 50, boundary = 0, position = "stack") +  # adjust the binwidth to personal preference
     labs(title = paste0("Frequencies of Sea distances/year for ", species," in ", location),
-         x = "Sea distance in km", y = "Frequency of species") +
+         x = "Sea distance (km)", y = "Percentage of total occurrences (%)") +
     theme_bw() +
     scale_fill_brewer(palette = "YlOrRd", na.value = "black") + # You can choose a different palette if you like
-    theme(plot.title = element_text(hjust = 0.5, size = 20, face = "bold"), # set title font size, placement
+    theme(plot.title = element_text(hjust = 0.5, size = 15, face = "bold"), # set title font size, placement
           plot.margin = margin(0.3, 0.3, 0.4, 0.4, "cm"),
           axis.text = element_text(size = 10),           # Set font size for axis numbers
-          axis.title = element_text(size = 20),
-          legend.title = element_text(size = 14),   # set legend title size
-          legend.text = element_text(size = 12),    # set legend text size
-          legend.key.size = unit(1.5, "lines")) +   # set legend key size
-    scale_x_continuous(breaks = seq(0, 5700, by = 250), expand = c(0, 0)) +
+          axis.title = element_text(size = 12),
+          legend.title = element_text(size = 10),   # set legend title size
+          legend.text = element_text(size = 8),    # set legend text size
+          legend.key.size = unit(1.5, "lines"),
+          axis.text.x = element_text(angle = 45, hjust = 1)) +   # set legend key size
+    scale_x_continuous(breaks = seq(0, 7500, by = 500), expand = c(0, 0)) +
     scale_y_continuous(expand = c(0, 0)) +
-    coord_cartesian(xlim = c(0, 5700), ylim = c(0,max_count*1.1)) # Use coord_cartesian for setting limits
+    coord_cartesian(xlim = c(0, 7500), ylim = c(0,100)) # Use coord_cartesian for setting limits
   
   if(!dir.exists(output_dir)) {
     dir.create(output_dir, recursive = TRUE)
@@ -289,38 +311,41 @@ plot.dist.by.year <- function(species, location, distances, output_dir) {
          plot = plot, width = 2400, height = 1200, units = "px", dpi = 300)
   return(plot)
 }
+
 # In src/functions.R
 
-plot_leaflet_map <- function(df, species_name, output_dir = NULL) {
-  if (!requireNamespace("leaflet", quietly = TRUE)) {
-    install.packages("leaflet")
-  }
-  library(leaflet)
-  
-  # Basic validation
-  if (!("latitude" %in% tolower(names(df))) || !("longitude" %in% tolower(names(df)))) {
-    stop("Dataframe must contain 'latitude' and 'longitude' columns")
-  }
-  
-  lat_col <- grep("latitude", names(df), ignore.case = TRUE, value = TRUE)
-  lon_col <- grep("longitude", names(df), ignore.case = TRUE, value = TRUE)
-  
-  map <- leaflet(df) %>%
-    addTiles() %>%
-    addCircleMarkers(
-      lng = ~get(lon_col), lat = ~get(lat_col),
-      popup = ~paste("Year:", df$year),
-      color = "blue", radius = 3, stroke = FALSE, fillOpacity = 0.6
-    ) %>%
-    addLegend("bottomright", colors = "blue", labels = "Observations",
-              title = species_name)
-  
-  # Optional: save HTML map
-  if (!is.null(output_dir)) {
-    html_file <- file.path(output_dir, paste0(gsub(" ", "_", species_name), "_map.html"))
-    htmlwidgets::saveWidget(map, file = html_file, selfcontained = TRUE)
-  }
-  
-  return(map)
-}
+# plot_leaflet_map <- function(df, species_name, output_dir = NULL) {
+#   if (!requireNamespace("leaflet", quietly = TRUE)) {
+#     install.packages("leaflet")
+#   }
+#   library(leaflet)
+#   
+#   # Basic validation
+#   if (!("latitude" %in% tolower(names(df))) || !("longitude" %in% tolower(names(df)))) {
+#     stop("Dataframe must contain 'latitude' and 'longitude' columns")
+#   }
+#   
+#   lat_col <- grep("latitude", names(df), ignore.case = TRUE, value = TRUE)
+#   lon_col <- grep("longitude", names(df), ignore.case = TRUE, value = TRUE)
+#   
+#   map <- leaflet(df) %>%
+#     addTiles() %>%
+#     addCircleMarkers(
+#       lng = ~get(lon_col), lat = ~get(lat_col),
+#       popup = ~paste("Year:", df$year),
+#       color = "blue", radius = 3, stroke = FALSE, fillOpacity = 0.6
+#     ) %>%
+#     addLegend("bottomright", colors = "blue", labels = "Observations",
+#               title = species_name)
+#   
+#   # Optional: save HTML map
+#   if (!is.null(output_dir)) {
+#     html_file <- file.path(output_dir, paste0(gsub(" ", "_", species_name), "_map.html"))
+#     htmlwidgets::saveWidget(map, file = html_file, selfcontained = TRUE)
+#   }
+#   
+#   return(map)
+# }
+
+
 
