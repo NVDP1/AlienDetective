@@ -15,7 +15,7 @@ Note: The Coordinates.csv and Species_Location.csv files should be prepared exac
 
 For detailed documentation: see the 'Documentation' directory for .Rmd files
 
-#### 1_Calculation_sea_distances.R
+#### 1.Calculations.R
 /!\ Run this on a server. This is computationally expensive. <br />
 
 1. Download and install libraries, then load data.
