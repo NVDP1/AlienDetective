@@ -2,13 +2,16 @@
 title: "Documentation AlienDetective.R"
 author: "Niels Vandepopuliere & Matthijs Gielen"
 date: "2025-06-03"
-output: 
+output:
   html_document:
     number_sections: true
     toc: true
     toc_depth: 3
     toc_float: true
     highlight: tango
+  pdf_document:
+    toc: true
+    toc_depth: '3'
 ---
 
 ```{r setup, include=FALSE}
@@ -573,6 +576,27 @@ for (species in species_location[,1]) {
 }
 
 ```
+### Output graphs for for Fibrocapsa japonica
+#### Distribution from all ARMS locations
+
+![ ](C:/Users/vande/OneDrive - Hogeschool West-Vlaanderen/AlienDetective2025/AlienDetective2025/AlienDetective_joel/data/Output_M/Fibrocapsa_japonica/Fibrocapsa_japonica_from_all_ARMS_locations.png)
+
+#### Sea distribution plot from one ARMS location
+
+![ ](C:/Users/vande/OneDrive - Hogeschool West-Vlaanderen/AlienDetective2025/AlienDetective2025/AlienDetective_joel/data/Output_M/Fibrocapsa_japonica/Fibrocapsa_japonica_from_BelgiumCoast.png)
+
+#### Geodesic and seaway plot
+![ ](C:/Users/vande/OneDrive - Hogeschool West-Vlaanderen/AlienDetective2025/AlienDetective2025/AlienDetective_joel/data/Output_M/Fibrocapsa_japonica/Fibrocapsa_japonica_from_BelgiumCoast_seadist&geodesic.png)
+
+#### Country plot from one ARMS location
+![ ](C:/Users/vande/OneDrive - Hogeschool West-Vlaanderen/AlienDetective2025/AlienDetective2025/AlienDetective_joel/data/Output_M/Fibrocapsa_japonica/Fibrocapsa_japonica_from_BelgiumCoast_by_country.png)
+
+#### Year plot
+![ ](C:/Users/vande/OneDrive - Hogeschool West-Vlaanderen/AlienDetective2025/AlienDetective2025/AlienDetective_joel/data/Output_M/Fibrocapsa_japonica/Fibrocapsa_japonica_from_BelgiumCoast_by_year.png)
+
+### Conclusion
+This species has moved a lot from RavennaM what indicates that this species was introduced at a certain location from ship transduction.
+
 ## Filtering data on location
 This script collects all the different species found at one ARMS location from several CSV files created after distance calculations. It combines them into one new CSV file. This file will then be used to make a single graph that shows how the species behave, starting from the ARMS location where they were found.
 ```{r pressure, echo=FALSE}
@@ -673,7 +697,12 @@ for (loc in locations) {
   plot_file_path <- file.path(location_folder, paste0("Distribution_of_species_in_", safe_loc, ".png"))
   ggsave(filename = plot_file_path, plot = plot, width = 2400, height = 1200, units = "px", dpi = 300)
 }
-plot
 ```
+### Output graph for GulfoPiran
+![ ](/Users/vande/OneDrive - Hogeschool West-Vlaanderen/AlienDetective2025/AlienDetective2025/AlienDetective_joel/data/Output_M/Location_graphs/GulfofPiran/Distribution_of_species_in_GulfofPiran.png)
+
+## Conclusion
+This location indicates that almost all species has moved from this ARMS locations to certain regions. This can cause harm on biodiversity conservation and ecosystems. This region should be monitored more to help prevent shipping these species to other regions where they could be invasive to other native species.
+
 >**Note:** The custom functions used to create the plots are defined in `src/functions.R` and documented in [doc/functions.html](functions.html). Please refer to these documents for additional information.  
 
