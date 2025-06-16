@@ -36,3 +36,6 @@ The output is in the directory 'Output_M' directory. In this directory all alien
 5. The fifth graph is also similar to the first graph but colored by year category.
 
 Patterns can be observed in these histograms. The x-axis represents distances in km, and the y-axis represents a percentage of the total counts frequency. An alien species can be detected when there is a spike in frequency at a large distance. Using the country plot, the origin region of the species can be identified. Using the year plot, the year in which the species migrated to that location can be determined.
+
+/!\ WARNING /!\ 
+Land_polygons file must be downloaded to make the raster map. This is too big to put on the GitHub and also add the cost_matrix.
