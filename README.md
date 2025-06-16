@@ -16,13 +16,14 @@ All R scripts can be found in "R_scripts" folder. For detailed documentation: se
 /!\ Run this on a server. This is computationally expensive. <br />
 
 Has all functions involved to calculate distances: <br />
-•	fetch_gbif_data -> fetches data from gbif
-•	ensure_point_in_sea -> checks if point from gbif is in sea or not
-•	move_occurrences_to_sea -> if point is detected on land move it to the nearest location in sea
-•	calculate.distances -> calculate the sea and geodesic distance
+•	fetch_gbif_data -> fetches data from gbif <br />
+•	ensure_point_in_sea -> checks if point from gbif is in sea or not <br />
+•	move_occurrences_to_sea -> if point is detected on land move it to the nearest location in sea <br />
+•	calculate.distances -> calculate the sea and geodesic distance <br />
 •	Plotting functions
 
 #### AlienDetective_2_M.R
+/!\ Run this on a server. This is computationally expensive. <br />
 Uses Functions.R script with data from input folder. Processes the input data and put output in correct folders.
 
 ##### Output
